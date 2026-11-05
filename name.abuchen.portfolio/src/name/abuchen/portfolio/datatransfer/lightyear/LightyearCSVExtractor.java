@@ -45,33 +45,22 @@ import name.abuchen.portfolio.money.Values;
 public class LightyearCSVExtractor implements Extractor
 {
     private static final DateTimeFormatter DATE_FORMAT_SLASH = new DateTimeFormatterBuilder()
-                    .appendPattern("dd/MM/yyyy")
-                    .optionalStart()
-                    .appendPattern("[' ']['T']HH:mm[:ss]")
-                    .optionalEnd()
-                    .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
-                    .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
-                    .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
-                    .toFormatter(Locale.ROOT);
+                    .appendPattern("dd/MM/yyyy").optionalStart().appendPattern("[' ']['T']HH:mm[:ss]").optionalEnd()
+                    .parseDefaulting(ChronoField.HOUR_OF_DAY, 0).parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
+                    .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0).toFormatter(Locale.ROOT);
 
-    private static final DateTimeFormatter DATE_FORMAT_ISO = new DateTimeFormatterBuilder()
-                    .appendPattern("yyyy-MM-dd")
-                    .optionalStart()
-                    .appendPattern("[' ']['T']HH:mm[:ss]")
-                    .optionalEnd()
-                    .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
-                    .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
-                    .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
-                    .toFormatter(Locale.ROOT);
+    private static final DateTimeFormatter DATE_FORMAT_ISO = new DateTimeFormatterBuilder().appendPattern("yyyy-MM-dd")
+                    .optionalStart().appendPattern("[' ']['T']HH:mm[:ss]").optionalEnd()
+                    .parseDefaulting(ChronoField.HOUR_OF_DAY, 0).parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
+                    .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0).toFormatter(Locale.ROOT);
 
     /**
      * Lightyear money market funds (e.g. BlackRock ICS liquidity funds) often
      * omit the ISIN in distribution entries. This mapping provides known
      * fallback ISINs for these tickers.
      */
-    private static final Map<String, String> TICKER_TO_ISIN = Map.of(
-                    "BRICEKSP", "IE000GWTNRJ7",
-                    "ICSUSSDP", "IE00B44BQ083");
+    private static final Map<String, String> TICKER_TO_ISIN = Map.of("BRICEKSP", "IE000GWTNRJ7", "ICSUSSDP",
+                    "IE00B44BQ083");
 
     public LightyearCSVExtractor(Client client)
     {
@@ -129,13 +118,8 @@ public class LightyearCSVExtractor implements Extractor
     private boolean tryParse(String content, char delimiter, SecurityCache securityCache, String source,
                     List<Item> items, List<Exception> errors)
     {
-        var format = CSVFormat.DEFAULT.builder()
-                        .setDelimiter(delimiter)
-                        .setHeader()
-                        .setSkipHeaderRecord(true)
-                        .setIgnoreHeaderCase(true)
-                        .setTrim(true)
-                        .get();
+        var format = CSVFormat.DEFAULT.builder().setDelimiter(delimiter).setHeader().setSkipHeaderRecord(true)
+                        .setIgnoreHeaderCase(true).setTrim(true).get();
 
         try (var reader = new StringReader(content); var parser = CSVParser.parse(reader, format))
         {
@@ -143,9 +127,7 @@ public class LightyearCSVExtractor implements Extractor
             if (headerMap == null || !hasHeader(headerMap, "Date") || !hasHeader(headerMap, "Type")
                             || !hasHeader(headerMap, "Net Amt.") || !hasHeader(headerMap, "CCY")
                             || !hasHeader(headerMap, "Reference"))
-            {
-                return false;
-            }
+            { return false; }
 
             var records = parser.getRecords();
             var processedRecords = new HashSet<CSVRecord>();
@@ -238,6 +220,14 @@ public class LightyearCSVExtractor implements Extractor
 
                         var inCcy = getField(inRecord, "CCY");
                         var inAmount = Math.abs(parseSignedDecimal(inRecord, "Net Amt.", Values.Amount.factor()));
+                        var exchangeRate = getField(inRecord, "FX Rate");
+                        if (!exchangeRate.isEmpty())
+                        {
+                            transferEntry.getSourceTransaction()
+                                            .addUnit(new Unit(Unit.Type.GROSS_VALUE, Money.of(outCcy, outAmount),
+                                                            Money.of(inCcy, inAmount),
+                                                            new BigDecimal(exchangeRate.replace(',', '.'))));
+                        }
                         transferEntry.getTargetTransaction().setCurrencyCode(inCcy);
                         transferEntry.getTargetTransaction().setAmount(inAmount);
                         transferEntry.getTargetTransaction().setDateTime(parseDate(getField(inRecord, "Date")));
@@ -297,8 +287,8 @@ public class LightyearCSVExtractor implements Extractor
                 processInterestOrReward(record, type, source, items);
                 break;
             default:
-                throw new IllegalArgumentException(MessageFormat.format(
-                                Messages.LightyearCSVMsgUnsupportedTransactionType, type));
+                throw new IllegalArgumentException(
+                                MessageFormat.format(Messages.LightyearCSVMsgUnsupportedTransactionType, type));
         }
     }
 
@@ -361,7 +351,8 @@ public class LightyearCSVExtractor implements Extractor
 
         if (isDistribution)
         {
-            // Broker quirk: Lightyear distribution exports invert taxes into Fee column
+            // Broker quirk: Lightyear distribution exports invert taxes into
+            // Fee column
             tax = Math.abs(parseSignedDecimal(record, "Fee", Values.Amount.factor()));
             fee = Math.abs(parseSignedDecimal(record, "Tax Amt.", Values.Amount.factor()));
         }
@@ -522,4 +513,3 @@ public class LightyearCSVExtractor implements Extractor
                         .setScale(0, RoundingMode.HALF_UP).longValueExact();
     }
 }
-

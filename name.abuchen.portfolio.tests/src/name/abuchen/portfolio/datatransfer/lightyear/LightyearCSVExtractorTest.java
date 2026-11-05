@@ -5,6 +5,7 @@ import static name.abuchen.portfolio.datatransfer.ExtractorMatchers.dividend;
 import static name.abuchen.portfolio.datatransfer.ExtractorMatchers.fee;
 import static name.abuchen.portfolio.datatransfer.ExtractorMatchers.hasAmount;
 import static name.abuchen.portfolio.datatransfer.ExtractorMatchers.hasDate;
+import static name.abuchen.portfolio.datatransfer.ExtractorMatchers.hasForexGrossValue;
 import static name.abuchen.portfolio.datatransfer.ExtractorMatchers.hasIsin;
 import static name.abuchen.portfolio.datatransfer.ExtractorMatchers.hasSecurity;
 import static name.abuchen.portfolio.datatransfer.ExtractorMatchers.hasShares;
@@ -56,88 +57,91 @@ public class LightyearCSVExtractorTest
         // 5 Buy/Sell (3 BUY, 2 SELL)
         assertThat(countBuySell(results), is(5L));
 
-        // 10 Account transactions (2 Dividends, 2 Distributions, 1 Deposit, 2 Withdrawals, 1 Interest, 1 Reward, 1 Conversion Fee)
+        // 10 Account transactions (2 Dividends, 2 Distributions, 1 Deposit, 2
+        // Withdrawals, 1 Interest, 1 Reward, 1 Conversion Fee)
         assertThat(countAccountTransactions(results), is(10L));
 
         // 1 Currency conversion transfer
         assertThat(countAccountTransfers(results), is(1L));
 
-        assertThat(results.size(), is(16));
+        // 16 transactions and 5 securities created by the import
+        assertThat(results.size(), is(21));
 
         // Dividend GOOG
         assertThat(results, hasItem(dividend( //
-                        hasDate("2025-12-16"), //
+                        hasDate("2025-12-16T06:02:35"), //
                         hasAmount("USD", 11.98), //
                         hasTaxes("USD", 2.11), //
                         hasSecurity(hasTicker("GOOG"), hasIsin("US02079K1079")))));
 
         // Dividend V
         assertThat(results, hasItem(dividend( //
-                        hasDate("2025-12-02"), //
+                        hasDate("2025-12-02T06:16:10"), //
                         hasAmount("USD", 1.14), //
                         hasTaxes("USD", 0.20), //
                         hasSecurity(hasTicker("V"), hasIsin("US92826C8394")))));
 
         // MMF Distribution BRICEKSP (Fee column parsed as tax)
         assertThat(results, hasItem(dividend( //
-                        hasDate("2025-12-01"), //
+                        hasDate("2025-12-01T13:33:55"), //
                         hasAmount("EUR", 6.83), //
                         hasTaxes("EUR", 0.36), //
                         hasSecurity(hasTicker("BRICEKSP"), hasIsin("IE000GWTNRJ7")))));
 
         // MMF Distribution ICSUSSDP (Fee column parsed as tax)
         assertThat(results, hasItem(dividend( //
-                        hasDate("2025-12-01"), //
+                        hasDate("2025-12-01T13:33:55"), //
                         hasAmount("USD", 21.17), //
                         hasTaxes("USD", 0.81), //
                         hasSecurity(hasTicker("ICSUSSDP"), hasIsin("IE00B44BQ083")))));
 
         // Reward
         assertThat(results, hasItem(interest( //
-                        hasDate("2025-10-02"), //
+                        hasDate("2025-10-02T17:19:06"), //
                         hasAmount("EUR", 0.05))));
 
         // Uninvested cash interest
         assertThat(results, hasItem(interest( //
-                        hasDate("2025-10-01"), //
+                        hasDate("2025-10-01T03:18:28"), //
                         hasAmount("USD", 0.02))));
 
         // Deposit
         assertThat(results, hasItem(deposit( //
-                        hasDate("2025-04-07"), //
+                        hasDate("2025-04-07T16:04:53"), //
                         hasAmount("EUR", 100.00))));
 
         // Withdrawals
         assertThat(results, hasItem(removal( //
-                        hasDate("2025-07-30"), //
+                        hasDate("2025-07-30T09:01:34"), //
                         hasAmount("USD", 300.00))));
         assertThat(results, hasItem(removal( //
-                        hasDate("2025-07-25"), //
+                        hasDate("2025-07-25T07:45:01"), //
                         hasAmount("USD", 1.00))));
 
         // AAPL Buy
         assertThat(results, hasItem(purchase( //
-                        hasDate("2025-03-15"), //
+                        hasDate("2025-03-15T10:30:00"), //
                         hasShares(10.00), //
                         hasAmount("USD", 1855.00), //
                         hasSecurity(hasTicker("AAPL"), hasIsin("US0378331005")))));
 
         // AAPL Sell
         assertThat(results, hasItem(sale( //
-                        hasDate("2025-06-20"), //
+                        hasDate("2025-06-20T14:22:11"), //
                         hasShares(10.00), //
                         hasAmount("USD", 2103.00), //
                         hasSecurity(hasTicker("AAPL"), hasIsin("US0378331005")))));
 
         // Conversion: Transfer out from EUR, in to USD, and fee
         assertThat(results, hasItem(outboundCash( //
-                        hasDate("2025-04-07"), //
-                        hasAmount("EUR", 59.03))));
+                        hasDate("2025-04-07T19:09:30"), //
+                        hasAmount("EUR", 59.03), //
+                        hasForexGrossValue("USD", 64.50))));
         assertThat(results, hasItem(inboundCash( //
-                        hasDate("2025-04-07"), //
+                        hasDate("2025-04-07T19:09:30"), //
                         hasAmount("USD", 64.50))));
         assertThat(results, hasItem(fee( //
-                        hasDate("2025-04-07"), //
+                        hasDate("2025-04-07T19:09:30"), //
                         hasAmount("EUR", 0.21))));
 
         new AssertImportActions().check(results, "EUR", "USD");
@@ -161,7 +165,7 @@ public class LightyearCSVExtractorTest
         assertThat(errors, empty());
         assertThat(countAccountTransactions(results), is(1L));
         assertThat(results, hasItem(dividend( //
-                        hasDate("2025-12-01"), //
+                        hasDate("2025-12-01T13:33:55"), //
                         hasAmount("EUR", 6.83), //
                         hasTaxes("EUR", 0.36), //
                         hasSecurity(hasTicker("BRICEKSP"), hasIsin("IE000GWTNRJ7")))));
@@ -186,8 +190,9 @@ public class LightyearCSVExtractorTest
         assertThat(errors, empty());
         assertThat(countAccountTransactions(results), is(1L));
         assertThat(countBuySell(results), is(1L));
-        assertThat(results, hasItem(deposit(hasDate("2025-04-07"), hasAmount("EUR", 100.00))));
-        assertThat(results, hasItem(purchase(hasDate("2025-03-15"), hasShares(5.00), hasAmount("USD", 900.00))));
+        assertThat(results, hasItem(deposit(hasDate("2025-04-07T16:04:53"), hasAmount("EUR", 100.00))));
+        assertThat(results,
+                        hasItem(purchase(hasDate("2025-03-15T10:30:00"), hasShares(5.00), hasAmount("USD", 900.00))));
     }
 
     @Test
@@ -206,4 +211,3 @@ public class LightyearCSVExtractorTest
         assertThat(errors.size(), is(1));
     }
 }
-
