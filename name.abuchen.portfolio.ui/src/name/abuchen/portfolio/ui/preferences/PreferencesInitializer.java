@@ -14,6 +14,9 @@ import name.abuchen.portfolio.ui.util.chart.ChartLineWidth;
 
 public class PreferencesInitializer extends AbstractPreferenceInitializer
 {
+    /**
+     * Initializes default preference values for Portfolio Performance.
+     */
     @Override
     public void initializeDefaultPreferences()
     {
@@ -47,6 +50,14 @@ public class PreferencesInitializer extends AbstractPreferenceInitializer
 
         // Value color scheme
         store.setDefault(UIConstants.Preferences.VALUE_COLOR_SCHEME, ValueColorScheme.STANDARD_SCHEME);
+        store.setDefault(UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_POSITIVE,
+                        ValueColorScheme.getDefaultCustomPositiveHex());
+        store.setDefault(UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_POSITIVE_ARROW,
+                        ValueColorScheme.getDefaultCustomPositiveHex());
+        store.setDefault(UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_NEGATIVE,
+                        ValueColorScheme.getDefaultCustomNegativeHex());
+        store.setDefault(UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_NEGATIVE_ARROW,
+                        ValueColorScheme.getDefaultCustomNegativeHex());
     }
 
     public static int compareOSVersion(String version)

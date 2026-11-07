@@ -11,6 +11,9 @@ import name.abuchen.portfolio.ui.util.ValueColorScheme;
 @SuppressWarnings("restriction")
 public class ValueColorSchemeCSSHandler implements ICSSPropertyHandler
 {
+    /**
+     * Applies a CSS property value to the target element.
+     */
     @Override
     public boolean applyCSSProperty(Object element, String property, CSSValue value, String pseudo, CSSEngine engine)
                     throws Exception
@@ -24,8 +27,19 @@ public class ValueColorSchemeCSSHandler implements ICSSPropertyHandler
         return false;
     }
 
+    /**
+     * Applies a specific CSS property to the given value color scheme.
+     *
+     * @param scheme the color scheme to update
+     * @param property the CSS property name
+     * @param value the CSS value to set
+     * @return {@code true} if the property was handled
+     */
     private boolean applyTo(ValueColorScheme scheme, String property, CSSValue value)
     {
+        if (scheme.isCustom() && ("positive-foreground".equals(property) || "negative-foreground".equals(property))) //$NON-NLS-1$ //$NON-NLS-2$
+            return true;
+
         switch (property)
         {
             case "positive-foreground": //$NON-NLS-1$
@@ -49,6 +63,12 @@ public class ValueColorSchemeCSSHandler implements ICSSPropertyHandler
         }
     }
 
+    /**
+     * Extracts a string representation from a primitive CSS value.
+     *
+     * @param value the CSS value
+     * @return the string value or {@code null}
+     */
     private String getText(CSSValue value)
     {
         if (value.getCssValueType() != CSSValue.CSS_PRIMITIVE_VALUE)

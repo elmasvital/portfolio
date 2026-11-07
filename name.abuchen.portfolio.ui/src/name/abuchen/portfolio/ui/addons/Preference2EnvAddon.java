@@ -7,6 +7,8 @@ import jakarta.inject.Inject;
 import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.core.di.extensions.Preference;
 import org.eclipse.e4.core.services.events.IEventBroker;
+import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.widgets.Display;
 
 import name.abuchen.portfolio.online.Factory;
 import name.abuchen.portfolio.online.impl.AlphavantageQuoteFeed;
@@ -28,6 +30,7 @@ import name.abuchen.portfolio.ui.dialogs.transactions.PresetValues;
 import name.abuchen.portfolio.ui.preferences.Experiments;
 import name.abuchen.portfolio.ui.util.ValueColorScheme;
 import name.abuchen.portfolio.ui.util.chart.ChartLineWidth;
+import name.abuchen.portfolio.util.ColorConversion;
 import name.abuchen.portfolio.util.FormatHelper;
 import name.abuchen.portfolio.util.TradeCalendarManager;
 import name.abuchen.portfolio.util.WebAccess;
@@ -37,6 +40,40 @@ public class Preference2EnvAddon
     @Inject
     private IEventBroker broker;
 
+    private boolean customColorEventPending = false;
+
+    /**
+     * Coalesces and posts a single value color scheme change notification when custom colors are updated.
+     */
+    private void postCustomColorSchemeChanged()
+    {
+        if (broker == null || !ValueColorScheme.CUSTOM_SCHEME.equals(ValueColorScheme.current().getIdentifier()))
+            return;
+
+        if (customColorEventPending)
+            return;
+
+        Display display = Display.getDefault();
+        if (display != null && !display.isDisposed())
+        {
+            customColorEventPending = true;
+            display.asyncExec(() -> {
+                customColorEventPending = false;
+                if (broker != null && ValueColorScheme.CUSTOM_SCHEME.equals(ValueColorScheme.current().getIdentifier()))
+                    broker.post(UIConstants.Event.Global.VALUE_COLOR_SCHEME_CHANGED, ValueColorScheme.CUSTOM_SCHEME);
+            });
+        }
+        else
+        {
+            broker.post(UIConstants.Event.Global.VALUE_COLOR_SCHEME_CHANGED, ValueColorScheme.CUSTOM_SCHEME);
+        }
+    }
+
+    /**
+     * Injects and applies the active value color scheme from preferences.
+     *
+     * @param scheme the identifier of the scheme to activate
+     */
     @Inject
     @Optional
     public void setValueColorScheme(@Preference(value = UIConstants.Preferences.VALUE_COLOR_SCHEME) String scheme)
@@ -45,7 +82,108 @@ public class Preference2EnvAddon
         ValueColorScheme.initialize(scheme);
 
         if (broker != null && !Objects.equals(currentScheme, ValueColorScheme.current().getIdentifier()))
-            broker.post(UIConstants.Event.Global.VALUE_COLOR_SCHEME_CHANGED, scheme);
+        {
+            if (ValueColorScheme.CUSTOM_SCHEME.equals(scheme))
+                postCustomColorSchemeChanged();
+            else
+                broker.post(UIConstants.Event.Global.VALUE_COLOR_SCHEME_CHANGED, scheme);
+        }
+    }
+
+    /**
+     * Injects and applies the custom positive text color from preferences.
+     *
+     * @param color the hex representation of the color
+     */
+    @Inject
+    @Optional
+    public void setCustomValueColorPositive(
+                    @Preference(value = UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_POSITIVE) String color)
+    {
+        if (color != null && !color.isBlank())
+        {
+            try
+            {
+                RGB rgb = ColorConversion.hex2RGB(color);
+                ValueColorScheme.getCustomScheme().setPositiveForeground(rgb);
+                postCustomColorSchemeChanged();
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
+    }
+
+    /**
+     * Injects and applies the custom positive arrow color from preferences.
+     *
+     * @param color the hex representation of the color
+     */
+    @Inject
+    @Optional
+    public void setCustomValueColorPositiveArrow(
+                    @Preference(value = UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_POSITIVE_ARROW) String color)
+    {
+        if (color != null && !color.isBlank())
+        {
+            try
+            {
+                RGB rgb = ColorConversion.hex2RGB(color);
+                ValueColorScheme.getCustomScheme().setUpArrowColor(rgb);
+                postCustomColorSchemeChanged();
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
+    }
+
+    /**
+     * Injects and applies the custom negative text color from preferences.
+     *
+     * @param color the hex representation of the color
+     */
+    @Inject
+    @Optional
+    public void setCustomValueColorNegative(
+                    @Preference(value = UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_NEGATIVE) String color)
+    {
+        if (color != null && !color.isBlank())
+        {
+            try
+            {
+                RGB rgb = ColorConversion.hex2RGB(color);
+                ValueColorScheme.getCustomScheme().setNegativeForeground(rgb);
+                postCustomColorSchemeChanged();
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
+    }
+
+    /**
+     * Injects and applies the custom negative arrow color from preferences.
+     *
+     * @param color the hex representation of the color
+     */
+    @Inject
+    @Optional
+    public void setCustomValueColorNegativeArrow(
+                    @Preference(value = UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_NEGATIVE_ARROW) String color)
+    {
+        if (color != null && !color.isBlank())
+        {
+            try
+            {
+                RGB rgb = ColorConversion.hex2RGB(color);
+                ValueColorScheme.getCustomScheme().setDownArrowColor(rgb);
+                postCustomColorSchemeChanged();
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
     }
 
     @Inject
