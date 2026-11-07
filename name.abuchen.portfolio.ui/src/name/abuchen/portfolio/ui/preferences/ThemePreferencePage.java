@@ -27,7 +27,9 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -44,6 +46,7 @@ import name.abuchen.portfolio.ui.util.Colors;
 import name.abuchen.portfolio.ui.util.ValueColorScheme;
 import name.abuchen.portfolio.ui.util.swt.ColoredLabel;
 import name.abuchen.portfolio.ui.util.swt.ControlDecoration;
+import name.abuchen.portfolio.util.ColorConversion;
 
 @SuppressWarnings("restriction")
 public final class ThemePreferencePage extends PreferencePage
@@ -72,6 +75,10 @@ public final class ThemePreferencePage extends PreferencePage
 
     private List<Button> valueColorSchemeOptions = new ArrayList<>();
     private List<Runnable> previewBackgroundUpdaters = new ArrayList<>();
+    private RGB customPositiveRGB;
+    private RGB customPositiveArrowRGB;
+    private RGB customNegativeRGB;
+    private RGB customNegativeArrowRGB;
 
     public ThemePreferencePage(IThemeEngine themeEngine)
     {
@@ -168,6 +175,56 @@ public final class ThemePreferencePage extends PreferencePage
         label.setText(Messages.LabelColorValueScheme);
         GridDataFactory.fillDefaults().grab(true, false).span(2, 1).applyTo(label);
 
+        String customPosHex = getPreferenceStore().getString(UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_POSITIVE);
+        try
+        {
+            customPositiveRGB = customPosHex != null && !customPosHex.isBlank() ? ColorConversion.hex2RGB(customPosHex)
+                            : ValueColorScheme.getCustomScheme().positiveForeground().getRGB();
+        }
+        catch (Exception e)
+        {
+            customPositiveRGB = ValueColorScheme.getCustomScheme().positiveForeground().getRGB();
+        }
+
+        String customPosArrowHex = getPreferenceStore().getString(UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_POSITIVE_ARROW);
+        try
+        {
+            customPositiveArrowRGB = customPosArrowHex != null && !customPosArrowHex.isBlank()
+                            ? ColorConversion.hex2RGB(customPosArrowHex)
+                            : ValueColorScheme.getCustomScheme().getUpArrowColor();
+            if (customPositiveArrowRGB == null)
+                customPositiveArrowRGB = customPositiveRGB;
+        }
+        catch (Exception e)
+        {
+            customPositiveArrowRGB = customPositiveRGB;
+        }
+
+        String customNegHex = getPreferenceStore().getString(UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_NEGATIVE);
+        try
+        {
+            customNegativeRGB = customNegHex != null && !customNegHex.isBlank() ? ColorConversion.hex2RGB(customNegHex)
+                            : ValueColorScheme.getCustomScheme().negativeForeground().getRGB();
+        }
+        catch (Exception e)
+        {
+            customNegativeRGB = ValueColorScheme.getCustomScheme().negativeForeground().getRGB();
+        }
+
+        String customNegArrowHex = getPreferenceStore().getString(UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_NEGATIVE_ARROW);
+        try
+        {
+            customNegativeArrowRGB = customNegArrowHex != null && !customNegArrowHex.isBlank()
+                            ? ColorConversion.hex2RGB(customNegArrowHex)
+                            : ValueColorScheme.getCustomScheme().getDownArrowColor();
+            if (customNegativeArrowRGB == null)
+                customNegativeArrowRGB = customNegativeRGB;
+        }
+        catch (Exception e)
+        {
+            customNegativeArrowRGB = customNegativeRGB;
+        }
+
         var selectedSchemaId = getPreferenceStore().getString(UIConstants.Preferences.VALUE_COLOR_SCHEME);
         var schemes = ValueColorScheme.getAvailableSchemes();
 
@@ -235,6 +292,31 @@ public final class ThemePreferencePage extends PreferencePage
             }
         }
 
+        if (customPositiveRGB != null)
+        {
+            getPreferenceStore().setValue(UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_POSITIVE,
+                            ColorConversion.toHex(customPositiveRGB));
+            ValueColorScheme.getCustomScheme().setPositiveForeground(customPositiveRGB);
+        }
+        if (customPositiveArrowRGB != null)
+        {
+            getPreferenceStore().setValue(UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_POSITIVE_ARROW,
+                            ColorConversion.toHex(customPositiveArrowRGB));
+            ValueColorScheme.getCustomScheme().setUpArrowColor(customPositiveArrowRGB);
+        }
+        if (customNegativeRGB != null)
+        {
+            getPreferenceStore().setValue(UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_NEGATIVE,
+                            ColorConversion.toHex(customNegativeRGB));
+            ValueColorScheme.getCustomScheme().setNegativeForeground(customNegativeRGB);
+        }
+        if (customNegativeArrowRGB != null)
+        {
+            getPreferenceStore().setValue(UIConstants.Preferences.VALUE_COLOR_SCHEME_CUSTOM_NEGATIVE_ARROW,
+                            ColorConversion.toHex(customNegativeArrowRGB));
+            ValueColorScheme.getCustomScheme().setDownArrowColor(customNegativeArrowRGB);
+        }
+
         Display.getDefault().asyncExec(() -> previewBackgroundUpdaters.forEach(Runnable::run));
 
         return super.performOk();
@@ -253,6 +335,17 @@ public final class ThemePreferencePage extends PreferencePage
         {
             var scheme = (ValueColorScheme) button.getData();
             button.setSelection(ValueColorScheme.STANDARD_SCHEME.equals(scheme.getIdentifier()));
+        }
+
+        try
+        {
+            customPositiveRGB = ColorConversion.hex2RGB("#00E000"); //$NON-NLS-1$
+            customPositiveArrowRGB = ColorConversion.hex2RGB("#00E000"); //$NON-NLS-1$
+            customNegativeRGB = ColorConversion.hex2RGB("#FF6B6B"); //$NON-NLS-1$
+            customNegativeArrowRGB = ColorConversion.hex2RGB("#FF6B6B"); //$NON-NLS-1$
+        }
+        catch (Exception ignored)
+        {
         }
 
         Display.getDefault().asyncExec(() -> previewBackgroundUpdaters.forEach(Runnable::run));
@@ -335,24 +428,63 @@ public final class ThemePreferencePage extends PreferencePage
         // Color preview composite
         var previewComposite = new Composite(parent, SWT.NONE);
         previewComposite.setBackgroundMode(SWT.INHERIT_FORCE);
-        GridLayoutFactory.fillDefaults().numColumns(4).margins(20, 5).spacing(10, 5).applyTo(previewComposite);
+        int numColumns = scheme.isCustom() ? 5 : 4;
+        GridLayoutFactory.fillDefaults().numColumns(numColumns).margins(20, 5).spacing(10, 5).applyTo(previewComposite);
         GridDataFactory.fillDefaults().span(2, 1).grab(true, false).applyTo(previewComposite);
 
         // Positive
         var positiveArrowLabel = new Label(previewComposite, SWT.NONE);
-        positiveArrowLabel.setImage(scheme.upArrow());
+        positiveArrowLabel.setImage(scheme.isCustom() && customPositiveArrowRGB != null
+                        ? ValueColorScheme.getArrowImage(customPositiveArrowRGB, true)
+                        : scheme.upArrow());
 
         var positiveLabel = new ColoredLabel(previewComposite, SWT.NONE);
         positiveLabel.setText(Values.Amount.format(Values.Amount.factorize(1234.56)));
-        positiveLabel.setTextColor(scheme.positiveForeground());
+        positiveLabel.setTextColor(scheme.isCustom() ? Colors.getColor(customPositiveRGB) : scheme.positiveForeground());
 
         // Negative
         var negativeArrowLabel = new Label(previewComposite, SWT.NONE);
-        negativeArrowLabel.setImage(scheme.downArrow());
+        negativeArrowLabel.setImage(scheme.isCustom() && customNegativeArrowRGB != null
+                        ? ValueColorScheme.getArrowImage(customNegativeArrowRGB, false)
+                        : scheme.downArrow());
 
         var negativeLabel = new ColoredLabel(previewComposite, SWT.NONE);
         negativeLabel.setText(Values.Amount.format(Values.Amount.factorize(-1234.56)));
-        negativeLabel.setTextColor(scheme.negativeForeground());
+        negativeLabel.setTextColor(scheme.isCustom() ? Colors.getColor(customNegativeRGB) : scheme.negativeForeground());
+
+        if (scheme.isCustom())
+        {
+            var btnCustomize = new Button(previewComposite, SWT.PUSH);
+            btnCustomize.setText(Messages.ValueColorSchemeCustomize);
+            btnCustomize.addListener(SWT.Selection, event -> {
+                ValueColorSchemeDialog dialog = new ValueColorSchemeDialog(getShell(),
+                                customPositiveRGB, customPositiveArrowRGB,
+                                customNegativeRGB, customNegativeArrowRGB);
+                if (dialog.open() == Window.OK)
+                {
+                    customPositiveRGB = dialog.getPositiveRGB();
+                    customPositiveArrowRGB = dialog.getPositiveArrowRGB();
+                    customNegativeRGB = dialog.getNegativeRGB();
+                    customNegativeArrowRGB = dialog.getNegativeArrowRGB();
+
+                    positiveLabel.setTextColor(Colors.getColor(customPositiveRGB));
+                    positiveLabel.redraw();
+                    positiveArrowLabel.setImage(ValueColorScheme.getArrowImage(customPositiveArrowRGB, true));
+                    positiveArrowLabel.redraw();
+
+                    negativeLabel.setTextColor(Colors.getColor(customNegativeRGB));
+                    negativeLabel.redraw();
+                    negativeArrowLabel.setImage(ValueColorScheme.getArrowImage(customNegativeArrowRGB, false));
+                    negativeArrowLabel.redraw();
+
+                    previewComposite.layout(true, true);
+                    previewComposite.redraw();
+                    previewComposite.update();
+
+                    selectScheme(radioButton);
+                }
+            });
+        }
 
         Runnable updatePreviewBackground = () -> {
             if (previewComposite.isDisposed())
@@ -360,18 +492,32 @@ public final class ThemePreferencePage extends PreferencePage
             var previewBackground = Colors.theme().defaultBackground();
             previewComposite.setBackground(previewBackground);
             positiveArrowLabel.setBackground(previewBackground);
-            positiveArrowLabel.setImage(scheme.upArrow());
+            positiveArrowLabel.setImage(scheme.isCustom() && customPositiveArrowRGB != null
+                            ? ValueColorScheme.getArrowImage(customPositiveArrowRGB, true)
+                            : scheme.upArrow());
+            positiveArrowLabel.redraw();
             negativeArrowLabel.setBackground(previewBackground);
-            negativeArrowLabel.setImage(scheme.downArrow());
+            negativeArrowLabel.setImage(scheme.isCustom() && customNegativeArrowRGB != null
+                            ? ValueColorScheme.getArrowImage(customNegativeArrowRGB, false)
+                            : scheme.downArrow());
+            negativeArrowLabel.redraw();
             positiveLabel.setBackdropColor(previewBackground);
-            positiveLabel.setTextColor(scheme.positiveForeground());
+            positiveLabel.setTextColor(scheme.isCustom() ? Colors.getColor(customPositiveRGB) : scheme.positiveForeground());
+            positiveLabel.redraw();
             negativeLabel.setBackdropColor(previewBackground);
-            negativeLabel.setTextColor(scheme.negativeForeground());
+            negativeLabel.setTextColor(scheme.isCustom() ? Colors.getColor(customNegativeRGB) : scheme.negativeForeground());
+            negativeLabel.redraw();
             previewComposite.redraw();
         };
         previewBackgroundUpdaters.add(updatePreviewBackground);
         Display.getDefault().asyncExec(updatePreviewBackground);
 
         return radioButton;
+    }
+
+    private void selectScheme(Button targetRadioButton)
+    {
+        for (var button : valueColorSchemeOptions)
+            button.setSelection(button == targetRadioButton);
     }
 }
