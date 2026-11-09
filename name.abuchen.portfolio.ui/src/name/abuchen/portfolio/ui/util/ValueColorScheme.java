@@ -50,7 +50,13 @@ public final class ValueColorScheme
         vivid.setUpArrow("scheme/vivid/light/up_arrow.svg"); //$NON-NLS-1$
         vivid.setDownArrow("scheme/vivid/light/down_arrow.svg"); //$NON-NLS-1$
 
-        schemes = List.of(standard, blueOrange, asia, vivid);
+        var a11y = new ValueColorScheme("a11y", Messages.ValueColorSchemeAccessible); //$NON-NLS-1$
+        a11y.setPositiveForeground(ColorConversion.hex2RGBA("#007A00")); //$NON-NLS-1$
+        a11y.setNegativeForeground(ColorConversion.hex2RGBA("#C62828")); //$NON-NLS-1$
+        a11y.setUpArrow("scheme/a11y/light/up_arrow.svg"); //$NON-NLS-1$
+        a11y.setDownArrow("scheme/a11y/light/down_arrow.svg"); //$NON-NLS-1$
+
+        schemes = List.of(standard, blueOrange, asia, vivid, a11y);
         currentScheme = standard;
     }
 

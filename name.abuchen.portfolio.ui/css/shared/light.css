@@ -130,6 +130,13 @@ ValueColorScheme.vivid {
 	down-arrow: "scheme/vivid/light/down_arrow.svg";
 }
 
+ValueColorScheme.a11y {
+	positive-foreground: #007A00;
+	negative-foreground: #C62828;
+	up-arrow: "scheme/a11y/light/up_arrow.svg";
+	down-arrow: "scheme/a11y/light/down_arrow.svg";
+}
+
 SecuritiesChart {
 	quote-color: #6a58db;
 	quote-area-positive-color: #8396f2;
