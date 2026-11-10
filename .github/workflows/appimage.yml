@@ -1,0 +1,71 @@
+name: Build Linux AppImage
+
+on:
+  workflow_dispatch:
+    inputs:
+      bundle_jre:
+        description: 'Bundle Zulu OpenJDK 21 inside the AppImage'
+        required: true
+        type: boolean
+        default: true
+  push:
+    branches:
+      - 'feature/appimage**'
+      - 'appimage**'
+    tags:
+      - 'v*'
+
+jobs:
+  build-appimage:
+    name: Build Linux AppImage (x86_64)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Zulu JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: zulu
+
+      - name: Set up Maven 3.9.16
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: 3.9.16
+
+      - name: Cache Maven artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+          key: ${{ runner.os }}-mvn-${{ hashFiles('**/pom.xml', '**/*.target') }}
+          restore-keys: |
+            ${{ runner.os }}-mvn-
+
+      - name: Build Linux product with Maven
+        run: |
+          mvn clean package \
+            --batch-mode \
+            -DskipTests \
+            -Dcheckstyle.skip=true \
+            -f portfolio-app/pom.xml \
+            -pl :portfolio-target-definition,:name.abuchen.portfolio.pdfbox1,:name.abuchen.portfolio.pdfbox3,:name.abuchen.portfolio,:name.abuchen.portfolio.rest,:name.abuchen.portfolio.bootstrap,:name.abuchen.portfolio.ui,:name.abuchen.portfolio.feature,:org.eclipse.swt.patch,:portfolio.product
+
+      - name: Package AppImage
+        env:
+          BUNDLE_JRE: ${{ github.event.inputs.bundle_jre != 'false' }}
+        run: |
+          sed -i 's/\r$//' portfolio-product/build-appimage.sh
+          chmod +x portfolio-product/build-appimage.sh
+          bash portfolio-product/build-appimage.sh
+
+      - name: Upload AppImage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PortfolioPerformance-Linux-x86_64-AppImage
+          path: target/PortfolioPerformance-x86_64.AppImage
+          if-no-files-found: error
